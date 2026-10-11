@@ -6,7 +6,7 @@ from src.analysis.profiler import (
     get_column_profile,
     get_numerical_statistics,
 )
-
+from src.analysis.quality import run_quality_checks
 st.set_page_config(
     page_title="AI Data Scientist",
     page_icon="📊",
@@ -72,5 +72,17 @@ if "df" in st.session_state:
         st.write("This dataset has no numerical columns.")
     else:
         st.dataframe(stats, use_container_width=True)
+        # ---------- Data quality ----------
+    st.header("3. Data quality")
+    findings = run_quality_checks(df)
+
+    if not findings:
+        st.success("No data-quality issues were detected by the current checks.")
+    else:
+        for f in findings:
+            if f["severity"] == "warning":
+                st.warning(f["message"])
+            else:
+                st.info(f["message"])
 else:
     st.info("Upload a CSV dataset to begin.")
