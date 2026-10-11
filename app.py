@@ -7,6 +7,18 @@ from src.analysis.profiler import (
     get_numerical_statistics,
 )
 from src.analysis.quality import run_quality_checks
+from src.analysis.eda import get_eda_kind, histogram, box_plot
+from src.analysis.eda import (
+    get_eda_kind,
+    histogram,
+    box_plot,
+    category_counts,
+    bar_chart,
+    correlation_matrix,
+    correlation_heatmap,
+    scatter_plot,
+    TOP_N_CATEGORIES,
+)
 st.set_page_config(
     page_title="AI Data Scientist",
     page_icon="📊",
@@ -84,5 +96,59 @@ if "df" in st.session_state:
                 st.warning(f["message"])
             else:
                 st.info(f["message"])
+    # ---------- EDA ----------
+    st.header("4. Exploratory data analysis")
+
+    numeric_cols = [c for c in df.columns if get_eda_kind(df[c]) == "numerical"]
+
+    if not numeric_cols:
+        st.write("This dataset has no numerical columns to chart.")
+    else:
+        st.subheader("Numerical columns")
+        selected = st.selectbox("Choose a numerical column", numeric_cols)
+
+        left, right = st.columns(2)
+        left.plotly_chart(histogram(df, selected), use_container_width=True)
+        right.plotly_chart(box_plot(df, selected), use_container_width=True)
+
+        st.dataframe(
+            get_numerical_statistics(df, [selected]), use_container_width=True
+        )
+
+    st.subheader("Categorical columns")
+    categorical_cols = [c for c in df.columns if get_eda_kind(df[c]) == "categorical"]
+
+    if not categorical_cols:
+        st.write("This dataset has no categorical columns to chart.")
+    else:
+        chosen = st.selectbox("Choose a categorical column", categorical_cols)
+        table = category_counts(df, chosen)
+
+        left, right = st.columns(2)
+        left.plotly_chart(bar_chart(table, chosen), use_container_width=True)
+        right.dataframe(table, use_container_width=True)
+
+        if df[chosen].nunique() > TOP_N_CATEGORIES:
+            st.caption(
+                f"Showing the {TOP_N_CATEGORIES} most frequent of "
+                f"{df[chosen].nunique()} distinct values."
+            )
+
+    st.subheader("Correlations")
+    if len(numeric_cols) < 2:
+        st.write("At least two numerical columns are needed for correlations.")
+    else:
+        corr = correlation_matrix(df, numeric_cols)
+        st.plotly_chart(correlation_heatmap(corr), use_container_width=True)
+        st.caption(
+            "Correlation measures linear association between two columns. "
+            "It does not show that one causes the other."
+        )
+
+        c1, c2 = st.columns(2)
+        x_col = c1.selectbox("X axis", numeric_cols, index=0)
+        y_col = c2.selectbox("Y axis", numeric_cols, index=1)
+        st.plotly_chart(scatter_plot(df, x_col, y_col), use_container_width=True)
+
 else:
     st.info("Upload a CSV dataset to begin.")
