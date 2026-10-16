@@ -20,7 +20,7 @@ from src.analysis.eda import (
     TOP_N_CATEGORIES,
 )
 from src.ml.preprocessing import prepare_data
-from src.ml.trainer import train_classification
+from src.ml.trainer import train_classification, train_regression
 
 from src.ml.problem_type import detect_problem_type, check_target, check_problem_choice
 st.set_page_config(
@@ -153,7 +153,7 @@ if "df" in st.session_state:
         x_col = c1.selectbox("X axis", numeric_cols, index=0)
         y_col = c2.selectbox("Y axis", numeric_cols, index=1)
         st.plotly_chart(scatter_plot(df, x_col, y_col), use_container_width=True)
-            # ---------- ML experiment lab ----------
+       # ---------- ML experiment lab ----------
     st.header("5. ML experiment lab")
 
     target = st.selectbox("Choose the target column to predict", df.columns)
@@ -177,31 +177,60 @@ if "df" in st.session_state:
         )
         if n_missing:
             st.caption("Rows with a missing target will be dropped before training.")
+
         choice_error = check_problem_choice(df[target], problem_type)
+
         if choice_error:
             st.error(choice_error)
-        elif problem_type == "classification":
-            if st.button("Train and compare models"):
-              with st.spinner("Training models..."):
-                prepared = prepare_data(df, target, problem_type)
-                st.session_state["ml_output"] = train_classification(prepared)
-                st.session_state["ml_prepared"] = prepared
 
-            if "ml_output" in st.session_state:
-                output = st.session_state["ml_output"]
+        elif problem_type == "classification":
+            if st.button("Train and compare models", key="train_clf"):
+                with st.spinner("Training models..."):
+                    prepared = prepare_data(df, target, problem_type)
+                    result = train_classification(prepared)
+                    result["target"] = target
+                    st.session_state["ml_output"] = result
+                    st.session_state["ml_prepared"] = prepared
+
+            ml_output = st.session_state.get("ml_output")
+            if ml_output and ml_output["target"] == target:
                 prepared = st.session_state["ml_prepared"]
 
                 st.subheader("Model comparison")
-                st.dataframe(output["results"], use_container_width=True)
+                st.dataframe(ml_output["results"], use_container_width=True)
                 st.caption(
                     f"Baseline: always predicting the most common class gives "
-                    f"accuracy {output['baseline_accuracy']}. "
+                    f"accuracy {ml_output['baseline_accuracy']}. "
                     f"Train rows: {len(prepared['X_train'])}, "
                     f"test rows: {len(prepared['X_test'])}. "
                     f"Columns not used: {prepared['dropped_cols'] or 'none'}."
                 )
+
         else:
-            st.info("Regression models come in the next step.")
+            if st.button("Train and compare models", key="train_reg"):
+                with st.spinner("Training models..."):
+                    prepared = prepare_data(df, target, problem_type)
+                    result = train_regression(prepared)
+                    result["target"] = target
+                    st.session_state["reg_output"] = result
+                    st.session_state["reg_prepared"] = prepared
+
+            reg_output = st.session_state.get("reg_output")
+            if reg_output and reg_output["target"] == target:
+                prepared = st.session_state["reg_prepared"]
+
+                st.subheader("Model comparison")
+                st.dataframe(reg_output["results"], use_container_width=True)
+                st.caption(
+                    f"Baseline: always predicting the training average gives "
+                    f"MAE {reg_output['baseline']['MAE']} and R² "
+                    f"{reg_output['baseline']['R²']}. "
+                    f"Train rows: {len(prepared['X_train'])}, "
+                    f"test rows: {len(prepared['X_test'])}. "
+                    f"Columns not used: {prepared['dropped_cols'] or 'none'}. "
+                    "MAE and RMSE are in the target's own units; "
+                    "a very high R² can simply mean other columns define the target."
+                )
             
         
 

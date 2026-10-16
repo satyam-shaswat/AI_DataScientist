@@ -1,16 +1,20 @@
+import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
+    mean_absolute_error,
+    mean_squared_error,
     precision_score,
+    r2_score,
     recall_score,
     roc_auc_score,
 )
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
-from xgboost import XGBClassifier
+from xgboost import XGBClassifier, XGBRegressor
 
 from src.ml.preprocessing import build_preprocessor, RANDOM_STATE
 
@@ -84,4 +88,52 @@ def train_classification(prepared):
         "models": fitted,
         "classes": list(encoder.classes_),
         "baseline_accuracy": baseline_accuracy,
+    }
+def get_regression_models():
+    return {
+        "Linear Regression": LinearRegression(),
+        "Random Forest": RandomForestRegressor(
+            n_estimators=200, random_state=RANDOM_STATE, n_jobs=-1
+        ),
+        "XGBoost": XGBRegressor(n_estimators=200, random_state=RANDOM_STATE),
+    }
+
+
+def train_regression(prepared):
+    """Train every regression model and return a comparison table."""
+    y_train = prepared["y_train"]
+    y_test = prepared["y_test"]
+
+    rows = []
+    fitted = {}
+
+    for name, model in get_regression_models().items():
+        pipeline = Pipeline([
+            ("prep", build_preprocessor(
+                prepared["numeric_cols"], prepared["categorical_cols"]
+            )),
+            ("model", model),
+        ])
+        pipeline.fit(prepared["X_train"], y_train)
+        predictions = pipeline.predict(prepared["X_test"])
+
+        rows.append({
+            "Model": name,
+            "MAE": mean_absolute_error(y_test, predictions),
+            "RMSE": float(np.sqrt(mean_squared_error(y_test, predictions))),
+            "R²": r2_score(y_test, predictions),
+        })
+        fitted[name] = pipeline
+
+    # Baseline: always predict the average of the training target.
+    mean_prediction = np.full(len(y_test), y_train.mean())
+    baseline = {
+        "MAE": round(float(mean_absolute_error(y_test, mean_prediction)), 3),
+        "R²": round(float(r2_score(y_test, mean_prediction)), 3),
+    }
+
+    return {
+        "results": pd.DataFrame(rows).round(3),
+        "models": fitted,
+        "baseline": baseline,
     }

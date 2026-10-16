@@ -1,10 +1,9 @@
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import numpy as np
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-y_true = [1, 1, 1, 1, 0, 0, 0, 0, 0, 0]
-y_pred = [1, 1, 1, 0, 1, 1, 0, 0, 0, 0]
+y_true = [3, 5, 2, 7]
+y_pred = [2, 5, 4, 8]
 
-print("TP/FN/FP/TN: count them yourself from the two lists")
-print("accuracy :", accuracy_score(y_true, y_pred))
-print("precision:", round(precision_score(y_true, y_pred), 3))
-print("recall   :", recall_score(y_true, y_pred))
-print("f1       :", round(f1_score(y_true, y_pred), 3))
+print("MAE :", mean_absolute_error(y_true, y_pred))
+print("RMSE:", round(float(np.sqrt(mean_squared_error(y_true, y_pred))), 3))
+print("R2  :", round(r2_score(y_true, y_pred), 3))
