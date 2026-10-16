@@ -28,7 +28,7 @@ st.set_page_config(
     page_icon="📊",
     layout="wide",
 )
-
+from src.ai.analyst import build_llm, ask_analyst, chat_history
 st.title("AI Data Scientist")
 st.caption("Intelligent Data Analysis & Machine Learning Platform")
 
@@ -231,6 +231,44 @@ if "df" in st.session_state:
                     "MAE and RMSE are in the target's own units; "
                     "a very high R² can simply mean other columns define the target."
                 )
+        # ---------- AI data analyst ----------
+    st.header("6. AI data analyst")
+    st.caption(
+        "Ask questions about your dataset. Numbers come from Python tools, "
+        "not from the language model. Your questions and the tool results "
+        "(not the full dataset) are sent to the LLM provider."
+    )
+
+    if st.session_state.get("chat_file") != st.session_state["filename"]:
+        st.session_state["chat"] = []
+        st.session_state["chat_file"] = st.session_state["filename"]
+
+    for message in st.session_state["chat"]:
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
+            if message.get("trace"):
+                with st.expander("Tools used"):
+                    for step in message["trace"]:
+                        st.write(f"**{step['tool']}**", step["arguments"])
+                        st.json(step["result"])
+
+    question = st.chat_input("Ask a question about the dataset")
+    if question:
+        try:
+            if "llm" not in st.session_state:
+                st.session_state["llm"] = build_llm()
+            history = chat_history(st.session_state["chat"])
+            with st.spinner("Analysing..."):
+                reply = ask_analyst(df, question, st.session_state["llm"], history)
+        except Exception as e:
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                st.error(
+                    "The free API quota for this model is used up. "
+                    "Wait for it to reset, or change LLM_MODEL in .env "
+                    "to another model and restart the app."
+                )
+            else:
+                st.error(f"The AI analyst could not run: {e}")
             
         
 

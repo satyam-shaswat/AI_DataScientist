@@ -4,3 +4,7 @@ numpy
 plotly
 scikit-learn
 xgboost
+langchain
+langchain-google-genai
+python-dotenv
+pytest
