@@ -106,7 +106,7 @@ AI-Data-Scientist/
 Requires Python 3.10 or newer.
 
 ```bash
-git clone https://github.com/<your-username>/AI-Data-Scientist.git
+git clone https://github.com/satyam-shaswat/AI_DataScientist.git
 cd AI-Data-Scientist
 python -m venv .venv
 
