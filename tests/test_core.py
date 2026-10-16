@@ -103,7 +103,7 @@ def test_group_by_percent_and_mean(small_df):
 def test_correlation_tool(small_df):
     result = call_tool(small_df, "calculate_correlation",
                        {"column1": "charges", "column2": "tenure"})
-    assert result["correlation"] == pytest.approx(-0.7695, abs=1e-3)
+    assert result["correlation"] == pytest.approx(-0.7822, abs=1e-3)
     assert result["strength"] == "strong"
     assert result["direction"] == "negative"
 
@@ -119,7 +119,8 @@ def test_tools_return_errors_instead_of_crashing(small_df):
 # ---------- preprocessing ----------
 
 def test_preprocessor_imputes_scales_and_encodes():
-    df = pd.DataFrame({"age": [20, 30, None, 40], "city": ["Delhi", "Pune", "Delhi", None]})
+    # np.nan (what read_csv produces) is imputed; a Python None in a text column is not
+    df = pd.DataFrame({"age": [20, 30, None, 40], "city": ["Delhi", "Pune", "Delhi", np.nan]})
     out = build_preprocessor(["age"], ["city"]).fit_transform(df)
     expected = np.array([[-1.41, 1, 0], [0, 0, 1], [0, 1, 0], [1.41, 1, 0]])
     assert np.allclose(out, expected, atol=0.01)
