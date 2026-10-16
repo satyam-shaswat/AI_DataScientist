@@ -19,6 +19,10 @@ from src.analysis.eda import (
     scatter_plot,
     TOP_N_CATEGORIES,
 )
+from src.ml.preprocessing import prepare_data
+from src.ml.trainer import train_classification
+
+from src.ml.problem_type import detect_problem_type, check_target, check_problem_choice
 st.set_page_config(
     page_title="AI Data Scientist",
     page_icon="📊",
@@ -149,6 +153,57 @@ if "df" in st.session_state:
         x_col = c1.selectbox("X axis", numeric_cols, index=0)
         y_col = c2.selectbox("Y axis", numeric_cols, index=1)
         st.plotly_chart(scatter_plot(df, x_col, y_col), use_container_width=True)
+            # ---------- ML experiment lab ----------
+    st.header("5. ML experiment lab")
+
+    target = st.selectbox("Choose the target column to predict", df.columns)
+
+    problem_error = check_target(df[target])
+    if problem_error:
+        st.error(problem_error)
+    else:
+        detected = detect_problem_type(df[target])
+        options = ["classification", "regression"]
+        problem_type = st.radio(
+            "Problem type (detected automatically, you can change it)",
+            options,
+            index=options.index(detected),
+            horizontal=True,
+        )
+        n_missing = int(df[target].isna().sum())
+        st.write(
+            f"Target: **{target}**, with **{df[target].nunique()}** distinct "
+            f"values and **{n_missing}** missing values."
+        )
+        if n_missing:
+            st.caption("Rows with a missing target will be dropped before training.")
+        choice_error = check_problem_choice(df[target], problem_type)
+        if choice_error:
+            st.error(choice_error)
+        elif problem_type == "classification":
+            if st.button("Train and compare models"):
+              with st.spinner("Training models..."):
+                prepared = prepare_data(df, target, problem_type)
+                st.session_state["ml_output"] = train_classification(prepared)
+                st.session_state["ml_prepared"] = prepared
+
+            if "ml_output" in st.session_state:
+                output = st.session_state["ml_output"]
+                prepared = st.session_state["ml_prepared"]
+
+                st.subheader("Model comparison")
+                st.dataframe(output["results"], use_container_width=True)
+                st.caption(
+                    f"Baseline: always predicting the most common class gives "
+                    f"accuracy {output['baseline_accuracy']}. "
+                    f"Train rows: {len(prepared['X_train'])}, "
+                    f"test rows: {len(prepared['X_test'])}. "
+                    f"Columns not used: {prepared['dropped_cols'] or 'none'}."
+                )
+        else:
+            st.info("Regression models come in the next step.")
+            
+        
 
 else:
     st.info("Upload a CSV dataset to begin.")

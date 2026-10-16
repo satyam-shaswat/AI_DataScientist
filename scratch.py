@@ -1,11 +1,10 @@
-import pandas as pd
-from src.analysis.quality import run_quality_checks
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-df = pd.DataFrame({
-    "id": range(100),
-    "value": [10 + i % 5 for i in range(99)] + [500],
-    "code": [f"C{i % 60}" for i in range(100)],
-})
+y_true = [1, 1, 1, 1, 0, 0, 0, 0, 0, 0]
+y_pred = [1, 1, 1, 0, 1, 1, 0, 0, 0, 0]
 
-for f in run_quality_checks(df):
-    print(f"[{f['severity']}] {f['message']}")
+print("TP/FN/FP/TN: count them yourself from the two lists")
+print("accuracy :", accuracy_score(y_true, y_pred))
+print("precision:", round(precision_score(y_true, y_pred), 3))
+print("recall   :", recall_score(y_true, y_pred))
+print("f1       :", round(f1_score(y_true, y_pred), 3))
