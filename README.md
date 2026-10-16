@@ -143,7 +143,7 @@ python -m pytest
 
 ## Example dataset
 
-The project was developed and tested on the public **Telco Customer Churn** dataset from Kaggle. It is not included in this repository; download it and place it in a local `data/` folder (check the dataset's license). Any reasonably sized CSV can be uploaded.
+The project was developed and tested on the public **Telco Customer Churn** dataset from Kaggle. It is included in this repository. Any reasonably sized CSV can be uploaded.
 
 ## Known limitations
 
